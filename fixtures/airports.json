@@ -1,0 +1,21 @@
+[
+  {
+    "code": "APS",
+    "name": "Awan Pura International",
+    "timezone": "Asia/Makassar",
+    "reopen_buffer_minutes": 20
+  },
+  {
+    "code": "BSR",
+    "name": "Basa Raya Airport",
+    "timezone": "Asia/Jakarta",
+    "reopen_buffer_minutes": 15
+  },
+  {
+    "code": "KTA",
+    "name": "Karta Regional",
+    "timezone": "Asia/Jakarta",
+    "reopen_buffer_minutes": 10
+  }
+]
+

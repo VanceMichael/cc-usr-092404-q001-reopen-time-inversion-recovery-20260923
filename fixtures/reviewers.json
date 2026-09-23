@@ -1,0 +1,5 @@
+[
+  {"reviewer_id": "ops-duty-01", "roles": ["operations_reviewer"]},
+  {"reviewer_id": "safety-duty-01", "roles": ["safety_reviewer"]},
+  {"reviewer_id": "audit-observer-01", "roles": ["audit_reader"]}
+]

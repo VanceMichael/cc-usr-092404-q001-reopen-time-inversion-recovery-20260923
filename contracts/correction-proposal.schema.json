@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/contracts/correction-proposal.schema.json",
+  "title": "机场中断权威更正提案",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "target_event_id", "base_projection_version", "patch", "submitted_by"],
+  "properties": {
+    "request_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{7,63}$"},
+    "target_event_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{7,63}$"},
+    "base_projection_version": {"type": "integer", "minimum": 1},
+    "patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "airport_code": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "effective_from": {"type": "string", "format": "date-time"},
+        "effective_until": {"type": ["string", "null"], "format": "date-time"}
+      }
+    },
+    "submitted_by": {"type": "string", "minLength": 3, "maxLength": 64},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 240}
+  }
+}

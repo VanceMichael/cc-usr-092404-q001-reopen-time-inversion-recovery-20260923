@@ -1,0 +1,10 @@
+.git
+.env
+*.key
+*.pem
+__pycache__/
+*.py[cod]
+data/
+*.db
+*.db-wal
+*.db-shm

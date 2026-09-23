@@ -1,0 +1,47 @@
+[
+  {
+    "flight_id": "AX-410-20260907",
+    "flight_number": "AX410",
+    "origin": "APS",
+    "destination": "BSR",
+    "scheduled_departure": "2026-09-07T15:30:00Z",
+    "scheduled_arrival": "2026-09-07T17:10:00Z",
+    "passenger_count": 168,
+    "can_retime": true,
+    "max_delay_minutes": 120
+  },
+  {
+    "flight_id": "AX-412-20260908",
+    "flight_number": "AX412",
+    "origin": "APS",
+    "destination": "KTA",
+    "scheduled_departure": "2026-09-07T16:30:00Z",
+    "scheduled_arrival": "2026-09-07T18:20:00Z",
+    "passenger_count": 142,
+    "can_retime": false,
+    "max_delay_minutes": 0
+  },
+  {
+    "flight_id": "BY-205-20260908",
+    "flight_number": "BY205",
+    "origin": "BSR",
+    "destination": "APS",
+    "scheduled_departure": "2026-09-07T15:05:00Z",
+    "scheduled_arrival": "2026-09-07T16:45:00Z",
+    "passenger_count": 131,
+    "can_retime": true,
+    "max_delay_minutes": 90
+  },
+  {
+    "flight_id": "KX-099-20260908",
+    "flight_number": "KX099",
+    "origin": "KTA",
+    "destination": "APS",
+    "scheduled_departure": "2026-09-07T17:40:00Z",
+    "scheduled_arrival": "2026-09-07T19:15:00Z",
+    "passenger_count": 74,
+    "can_retime": true,
+    "max_delay_minutes": 45
+  }
+]
+

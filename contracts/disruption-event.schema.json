@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/contracts/disruption-event.schema.json",
+  "title": "Airport disruption event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_version",
+    "event_type",
+    "airport_code",
+    "effective_from",
+    "reported_at"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{7,63}$"
+    },
+    "event_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["airport.closed", "airport.extended", "airport.reopened"]
+    },
+    "airport_code": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "effective_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "effective_until": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "reported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "supersedes_event_id": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z0-9][a-z0-9-]{7,63}$"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    }
+  }
+}
+
