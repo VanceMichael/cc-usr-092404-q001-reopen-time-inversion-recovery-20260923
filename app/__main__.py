@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from app.config import Config, load_airports, load_flights
+from app.config import Config, load_airports, load_flights, load_reviewers
 from app.repository import Repository
 from app.server import build_server
 from app.service import DisruptionService
@@ -14,8 +14,9 @@ def main() -> int:
     config = Config.from_env()
     airports = load_airports(config.fixtures_dir)
     flights = load_flights(config.fixtures_dir, airports)
+    reviewers = load_reviewers(config.fixtures_dir)
     repo = Repository(config.db_path)
-    service = DisruptionService(repo, airports, flights)
+    service = DisruptionService(repo, airports, flights, reviewers)
     server = build_server(config.host, config.port, service)
     print(
         f"airport-disruption service listening on {config.host}:{config.port} "

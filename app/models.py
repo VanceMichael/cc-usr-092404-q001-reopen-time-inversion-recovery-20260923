@@ -28,6 +28,19 @@ ACTIVE_IMPACT_STATUSES = (IMPACT_CANCELLED, IMPACT_DELAYED, IMPACT_PENDING)
 # Event processing states
 STATE_PROCESSED = "processed"
 STATE_REPLAYED = "replayed"
+STATE_REJECTED = "rejected"
+STATE_PENDING_REVIEW = "pending_review"
+
+# Adjudication outcomes for an incoming submission.
+DECISION_ACCEPTED = "accepted"
+DECISION_REJECTED = "rejected"
+DECISION_HELD = "pending_review"
+
+# Correction proposal review states and decisions.
+REVIEW_PENDING = "pending"
+REVIEW_APPROVED = "approved"
+REVIEW_REJECTED = "rejected"
+REVIEW_STATES = (REVIEW_PENDING, REVIEW_APPROVED, REVIEW_REJECTED)
 
 CLOSED_TYPES = (EVENT_CLOSED, EVENT_EXTENDED)
 

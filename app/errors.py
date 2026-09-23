@@ -49,6 +49,11 @@ class NotFoundError(AppError):
     status = 404
 
 
+class ForbiddenError(AppError):
+    code = "forbidden"
+    status = 403
+
+
 class BadRequestError(AppError):
     code = "bad_request"
     status = 400

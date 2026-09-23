@@ -160,3 +160,26 @@ def parse_fixture_datetime(value: object, field: str) -> datetime:
     except ValueError:
         raise AppError(f"{field} is not a valid ISO 8601 date-time") from None
     return dt.astimezone(timezone.utc)
+
+
+def load_reviewers(fixtures_dir: Path) -> dict[str, frozenset[str]]:
+    """加载更正提案裁定人员及其角色。"""
+    raw = _load_json(fixtures_dir / "reviewers.json")
+    if not isinstance(raw, list):
+        raise AppError("fixtures/reviewers.json must be a JSON array")
+    reviewers: dict[str, frozenset[str]] = {}
+    for idx, item in enumerate(raw):
+        source = f"reviewers[{idx}]"
+        if not isinstance(item, dict):
+            raise AppError(f"{source} must be an object")
+        _require_fields(item, ("reviewer_id", "roles"), source)
+        reviewer_id = item["reviewer_id"]
+        roles = item["roles"]
+        if not isinstance(reviewer_id, str) or not reviewer_id.strip():
+            raise AppError(f"{source}.reviewer_id must be a non-empty string")
+        if not isinstance(roles, list) or not all(isinstance(r, str) for r in roles):
+            raise AppError(f"{source}.roles must be a list of role strings")
+        reviewers[reviewer_id] = frozenset(roles)
+    if not reviewers:
+        raise AppError("fixtures/reviewers.json contains no reviewers")
+    return reviewers

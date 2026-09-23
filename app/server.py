@@ -83,6 +83,12 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
                                 "GET  /api/v1/events/{event_id}",
                                 "GET  /api/v1/airports/{airport_code}/summary",
                                 "GET  /api/v1/flights/affected",
+                                "POST /api/v1/corrections",
+                                "GET  /api/v1/corrections",
+                                "GET  /api/v1/corrections/{request_id}",
+                                "POST /api/v1/corrections/{request_id}/decision",
+                                "GET  /api/v1/review-queue",
+                                "GET  /api/v1/projection-log",
                                 "GET  /healthz",
                             ],
                         },
@@ -112,6 +118,59 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
                     self._require_method(method, "POST", path)
                     payload = self._read_json_body()
                     self._send_json(201, state.service.submit_event(payload))
+                    return
+
+                match = re.fullmatch(
+                    r"/api/v1/corrections/([A-Za-z0-9-]+)/decision", path
+                )
+                if match:
+                    self._require_method(method, "POST", path)
+                    payload = self._read_json_body()
+                    self._send_json(
+                        200,
+                        state.service.decide_correction(match.group(1), payload),
+                    )
+                    return
+
+                match = re.fullmatch(r"/api/v1/corrections/([A-Za-z0-9-]+)", path)
+                if match:
+                    self._require_method(method, "GET", path)
+                    self._send_json(
+                        200, state.service.get_correction(match.group(1))
+                    )
+                    return
+
+                if path == "/api/v1/corrections":
+                    if method == "POST":
+                        payload = self._read_json_body()
+                        self._send_json(202, state.service.submit_correction(payload))
+                        return
+                    self._require_method(method, "GET", path)
+                    self._send_json(
+                        200,
+                        state.service.list_corrections(
+                            status=query.get("status", [None])[0],
+                            airport=query.get("airport", [None])[0],
+                        ),
+                    )
+                    return
+
+                if path == "/api/v1/review-queue":
+                    self._require_method(method, "GET", path)
+                    airport = query.get("airport", [None])[0]
+                    self._send_json(200, state.service.review_queue(airport))
+                    return
+
+                if path == "/api/v1/projection-log":
+                    self._require_method(method, "GET", path)
+                    airport = query.get("airport", [None])[0]
+                    limit = self._parse_int(
+                        query.get("limit", [None])[0], 100, "limit", 1, 500
+                    )
+                    self._send_json(
+                        200,
+                        state.service.projection_log(airport=airport, limit=limit),
+                    )
                     return
 
                 raise NotFoundError(f"No route for {method} {path}")

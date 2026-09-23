@@ -84,6 +84,12 @@ def chain_window(
         )
     # reopened: operations resume after the airport's operational buffer
     resume_at = event.effective_from + timedelta(minutes=airport.reopen_buffer_minutes)
+    if resume_at < root.effective_from:
+        # Defense in depth: the service layer rejects such events, but the
+        # engine must never construct a window that ends before it began.
+        raise ValueError(
+            "reopened event would resume before the closure chain started"
+        )
     return ClosureWindow(
         airport_code=event.airport_code,
         root_event_id=root.event_id,
