@@ -84,6 +84,13 @@ def chain_window(
         )
     # reopened: operations resume after the airport's operational buffer
     resume_at = event.effective_from + timedelta(minutes=airport.reopen_buffer_minutes)
+    # Defense in depth: an adjudicated chain can never produce a window whose
+    # end is at or before its start. Service-level chain arbitration rejects
+    # such reopen events before they reach the engine.
+    if resume_at <= root.effective_from:
+        raise ValueError(
+            "reopened event resolves the closure before the chain started"
+        )
     return ClosureWindow(
         airport_code=event.airport_code,
         root_event_id=root.event_id,

@@ -83,6 +83,13 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
                                 "GET  /api/v1/events/{event_id}",
                                 "GET  /api/v1/airports/{airport_code}/summary",
                                 "GET  /api/v1/flights/affected",
+                                "POST /api/v1/corrections",
+                                "GET  /api/v1/corrections",
+                                "POST /api/v1/corrections/{request_id}/decision",
+                                "GET  /api/v1/corrections/{request_id}",
+                                "GET  /api/v1/rejections",
+                                "GET  /api/v1/journal",
+                                "GET  /api/v1/projection",
                                 "GET  /healthz",
                             ],
                         },
@@ -92,7 +99,15 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
                 match = re.fullmatch(r"/api/v1/events/([A-Za-z0-9-]+)", path)
                 if match:
                     self._require_method(method, "GET", path)
-                    self._send_json(200, state.service.event_status(match.group(1)))
+                    self._send_json(
+                        200,
+                        state.service.event_status(
+                            match.group(1),
+                            projection_version=self._optional_int(
+                                query, "projection_version"
+                            ),
+                        ),
+                    )
                     return
 
                 match = re.fullmatch(
@@ -100,7 +115,15 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
                 )
                 if match:
                     self._require_method(method, "GET", path)
-                    self._send_json(200, state.service.airport_summary(match.group(1)))
+                    self._send_json(
+                        200,
+                        state.service.airport_summary(
+                            match.group(1),
+                            projection_version=self._optional_int(
+                                query, "projection_version"
+                            ),
+                        ),
+                    )
                     return
 
                 if path == "/api/v1/flights/affected":
@@ -112,6 +135,88 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
                     self._require_method(method, "POST", path)
                     payload = self._read_json_body()
                     self._send_json(201, state.service.submit_event(payload))
+                    return
+
+                if path == "/api/v1/corrections":
+                    if method == "POST":
+                        payload = self._read_json_body()
+                        # A created proposal is an adjudication version but not
+                        # yet a change to published results.
+                        self._send_json(201, state.service.submit_correction(payload))
+                        return
+                    if method == "GET":
+                        self._send_json(
+                            200,
+                            state.service.list_corrections(
+                                query.get("state", [None])[0]
+                            ),
+                        )
+                        return
+                    self._require_method(method, "POST", path)
+
+                match = re.fullmatch(
+                    r"/api/v1/corrections/([a-z0-9-]+)/decision", path
+                )
+                if match:
+                    self._require_method(method, "POST", path)
+                    body = self._read_json_body()
+                    if not isinstance(body, dict):
+                        raise BadRequestError("Decision body must be a JSON object")
+                    reviewer_id = body.get("reviewer_id")
+                    decision = body.get("decision")
+                    reason = body.get("reason")
+                    if not isinstance(reviewer_id, str) or not reviewer_id:
+                        raise BadRequestError("reviewer_id is required")
+                    if not isinstance(decision, str):
+                        raise BadRequestError("decision is required")
+                    self._send_json(
+                        200,
+                        state.service.decide_correction(
+                            match.group(1), decision, reviewer_id,
+                            reason if isinstance(reason, str) else None,
+                        ),
+                    )
+                    return
+
+                match = re.fullmatch(r"/api/v1/corrections/([a-z0-9-]+)", path)
+                if match:
+                    self._require_method(method, "GET", path)
+                    self._send_json(
+                        200, state.service.correction_status(match.group(1))
+                    )
+                    return
+
+                if path == "/api/v1/rejections":
+                    self._require_method(method, "GET", path)
+                    airport = query.get("airport", [None])[0]
+                    self._send_json(
+                        200,
+                        state.service.rejected_material(
+                            airport=airport,
+                            projection_version=self._optional_int(
+                                query, "projection_version"
+                            ),
+                        ),
+                    )
+                    return
+
+                if path == "/api/v1/journal":
+                    self._require_method(method, "GET", path)
+                    since = self._parse_int(
+                        query.get("since", ["0"])[0], 0, "since", 0, 1_000_000_000
+                    )
+                    limit = self._parse_int(
+                        query.get("limit", ["200"])[0], 200, "limit", 1, 1000
+                    )
+                    self._send_json(200, state.service.journal(since=since, limit=limit))
+                    return
+
+                if path == "/api/v1/projection":
+                    self._require_method(method, "GET", path)
+                    self._send_json(
+                        200,
+                        {"projection_version": state.service.current_projection()},
+                    )
                     return
 
                 raise NotFoundError(f"No route for {method} {path}")
@@ -187,7 +292,25 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
                 status=one("status"),
                 limit=limit,
                 offset=offset,
+                projection_version=self._optional_int(query, "projection_version"),
             )
+
+        @staticmethod
+        def _optional_int(query: dict[str, list[str]], name: str):
+            values = query.get(name)
+            if values is None:
+                return None
+            if len(values) > 1:
+                raise BadRequestError(
+                    f"Query parameter '{name}' must be provided once"
+                )
+            try:
+                return int(values[0])
+            except ValueError:
+                raise BadRequestError(
+                    f"Query parameter '{name}' must be an integer",
+                    {"received": values[0]},
+                ) from None
 
         @staticmethod
         def _parse_int(

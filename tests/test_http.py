@@ -166,6 +166,85 @@ class HttpTest(ServiceTestCase):
         self.assertTrue(all(i["crosses_midnight"] for i in body["impacts"]))
         self.assertEqual(body["impact_count"], 3)
 
+    def test_out_of_order_reopen_rejected_and_audited(self) -> None:
+        _request("POST", f"{self.base}/api/v1/events", base_event())
+        bad = {
+            "event_id": "evt-reopen-bad01",
+            "event_version": 2,
+            "event_type": "airport.reopened",
+            "airport_code": "APS",
+            "effective_from": "2026-09-07T14:00:00Z",
+            "reported_at": "2026-09-07T15:00:00Z",
+            "supersedes_event_id": "evt-close0000001",
+        }
+        status, body = _request("POST", f"{self.base}/api/v1/events", bad)
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error"]["code"], "event_rejected")
+
+        status, summary = _request("GET", f"{self.base}/api/v1/airports/APS/summary")
+        self.assertEqual(summary["active_chains"], 1)
+        self.assertEqual(summary["affected_flights"], 3)
+
+        status, rejected = _request(
+            "GET", f"{self.base}/api/v1/rejections?airport=APS"
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(rejected["count"], 1)
+        self.assertEqual(rejected["rejections"][0]["event_id"], "evt-reopen-bad01")
+
+    def test_correction_review_flow_and_versioned_replay(self) -> None:
+        _request("POST", f"{self.base}/api/v1/events", base_event())
+        status, projection = _request("GET", f"{self.base}/api/v1/projection")
+        version = projection["projection_version"]
+
+        proposal = {
+            "request_id": "cor-http-shorten1",
+            "target_event_id": "evt-close0000001",
+            "base_projection_version": version,
+            "patch": {"effective_until": "2026-09-07T15:30:00Z"},
+            "submitted_by": "ops-duty-01",
+            "reason": "ash cleared early",
+        }
+        status, body = _request("POST", f"{self.base}/api/v1/corrections", proposal)
+        self.assertEqual(status, 201)
+        self.assertEqual(body["state"], "pending_review")
+
+        # Pending proposal must not change published results.
+        _, summary = _request("GET", f"{self.base}/api/v1/airports/APS/summary")
+        self.assertEqual(summary["affected_flights"], 3)
+
+        # Auditor is forbidden from adjudicating.
+        status, body = _request(
+            "POST",
+            f"{self.base}/api/v1/corrections/cor-http-shorten1/decision",
+            {"reviewer_id": "audit-observer-01", "decision": "approved"},
+        )
+        self.assertEqual(status, 403)
+
+        # Operations reviewer approves.
+        status, body = _request(
+            "POST",
+            f"{self.base}/api/v1/corrections/cor-http-shorten1/decision",
+            {"reviewer_id": "ops-duty-01", "decision": "approved"},
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body["state"], "approved")
+
+        _, current = _request("GET", f"{self.base}/api/v1/airports/APS/summary")
+        self.assertEqual(current["affected_flights"], 0)
+
+        _, old = _request(
+            "GET",
+            f"{self.base}/api/v1/airports/APS/summary?projection_version={version}",
+        )
+        self.assertEqual(old["affected_flights"], 3)
+        self.assertEqual(old["projection_version"], version)
+
+        _, journal = _request("GET", f"{self.base}/api/v1/journal")
+        kinds = {e["kind"] for e in journal["entries"]}
+        self.assertIn("correction_proposed", kinds)
+        self.assertIn("correction_adopted", kinds)
+
 
 if __name__ == "__main__":
     unittest.main()

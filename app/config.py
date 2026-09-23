@@ -145,6 +145,38 @@ def load_flights(fixtures_dir: Path, airports: dict[str, Airport]) -> dict[str, 
     return flights
 
 
+def load_reviewers(fixtures_dir: Path) -> dict[str, list[str]]:
+    """加载审核员及其角色；审核读取者（audit_reader）无权裁定更正。"""
+    path = fixtures_dir / "reviewers.json"
+    try:
+        raw = _load_json(path)
+    except AppError:
+        # Reviewers are optional for deployments that never adjudicate.
+        return {}
+    if not isinstance(raw, list):
+        raise AppError("fixtures/reviewers.json must be a JSON array")
+    reviewers: dict[str, list[str]] = {}
+    for idx, item in enumerate(raw):
+        source = f"reviewers[{idx}]"
+        if not isinstance(item, dict):
+            raise AppError(f"{source} must be an object")
+        _require_fields(item, ("reviewer_id", "roles"), source)
+        reviewer_id = item["reviewer_id"]
+        roles = item["roles"]
+        if not isinstance(reviewer_id, str) or not reviewer_id:
+            raise AppError(f"{source}.reviewer_id must be a non-empty string")
+        if (
+            not isinstance(roles, list)
+            or not roles
+            or not all(isinstance(r, str) and r for r in roles)
+        ):
+            raise AppError(f"{source}.roles must be a non-empty array of strings")
+        if reviewer_id in reviewers:
+            raise AppError(f"Duplicate reviewer_id in fixtures: {reviewer_id}")
+        reviewers[reviewer_id] = list(roles)
+    return reviewers
+
+
 def parse_fixture_datetime(value: object, field: str) -> datetime:
     from datetime import timezone
 

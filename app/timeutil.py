@@ -51,6 +51,12 @@ def to_utc(dt: datetime) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
+def parse_utc(value: str) -> datetime:
+    """解析已规范化的存储时间字符串（Z 或显式偏移）为 UTC datetime。"""
+    text = value[:-1] + "+00:00" if value.endswith("Z") else value
+    return datetime.fromisoformat(text).astimezone(timezone.utc)
+
+
 def load_timezone(name: str) -> ZoneInfo:
     try:
         return ZoneInfo(name)

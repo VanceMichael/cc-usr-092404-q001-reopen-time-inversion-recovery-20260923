@@ -29,7 +29,30 @@ ACTIVE_IMPACT_STATUSES = (IMPACT_CANCELLED, IMPACT_DELAYED, IMPACT_PENDING)
 STATE_PROCESSED = "processed"
 STATE_REPLAYED = "replayed"
 
+# Intake / correction adjudication states
+INTAKE_ADOPTED = "adopted"
+INTAKE_REJECTED = "rejected"
+
+CORRECTION_PENDING = "pending_review"
+CORRECTION_APPROVED = "approved"
+CORRECTION_REJECTED = "rejected"
+CORRECTION_STATES = (CORRECTION_PENDING, CORRECTION_APPROVED, CORRECTION_REJECTED)
+
+DECISION_APPROVE = "approved"
+DECISION_REJECT = "rejected"
+
+# Projection journal entry kinds
+JOURNAL_EVENT_ADOPTED = "event_adopted"
+JOURNAL_EVENT_REJECTED = "event_rejected"
+JOURNAL_CORRECTION_PROPOSED = "correction_proposed"
+JOURNAL_CORRECTION_APPROVED = "correction_adopted"
+JOURNAL_CORRECTION_REJECTED = "correction_rejected"
+
 CLOSED_TYPES = (EVENT_CLOSED, EVENT_EXTENDED)
+
+# Reviewer roles allowed to adjudicate corrections; auditors are read-only.
+REVIEWER_ROLES = ("operations_reviewer", "safety_reviewer")
+AUDITOR_ROLE = "audit_reader"
 
 
 @dataclass(frozen=True)

@@ -44,6 +44,24 @@ class EventConflictError(AppError):
     status = 409
 
 
+class RejectedEventError(ValidationError):
+    """材料被裁定拒绝（时间倒序等），已作为审计记录落库。"""
+
+    code = "event_rejected"
+
+
+class ConflictStateError(AppError):
+    """提案基础版本已过期（乐观并发冲突）。"""
+
+    code = "projection_conflict"
+    status = 409
+
+
+class ForbiddenReviewerError(AppError):
+    code = "forbidden_reviewer"
+    status = 403
+
+
 class NotFoundError(AppError):
     code = "not_found"
     status = 404

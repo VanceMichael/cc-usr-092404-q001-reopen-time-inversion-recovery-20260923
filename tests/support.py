@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.config import ROOT, load_airports, load_flights
+from app.config import ROOT, load_airports, load_flights, load_reviewers
 from app.repository import Repository
 from app.service import DisruptionService
 
@@ -19,8 +19,11 @@ class ServiceTestCase(unittest.TestCase):
         self.db_path = Path(self._tmp.name) / "test.db"
         self.airports = load_airports(FIXTURES_DIR)
         self.flights = load_flights(FIXTURES_DIR, self.airports)
+        self.reviewers = load_reviewers(FIXTURES_DIR)
         self.repo = Repository(self.db_path)
-        self.service = DisruptionService(self.repo, self.airports, self.flights)
+        self.service = DisruptionService(
+            self.repo, self.airports, self.flights, self.reviewers
+        )
 
     def tearDown(self) -> None:
         self.repo.close()
@@ -30,7 +33,9 @@ class ServiceTestCase(unittest.TestCase):
         """模拟容器重启后重新打开同一数据库文件。"""
         self.repo.close()
         self.repo = Repository(self.db_path)
-        self.service = DisruptionService(self.repo, self.airports, self.flights)
+        self.service = DisruptionService(
+            self.repo, self.airports, self.flights, self.reviewers
+        )
         return self.service
 
 
